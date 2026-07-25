@@ -1,0 +1,28 @@
+# Build output
+/.build
+/Packages
+ClipHistory.app/
+*.icns
+*.iconset/
+
+# Xcode / SwiftPM
+# Package.resolved is intentionally NOT ignored — this is an app, not a library.
+xcuserdata/
+DerivedData/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Keys and certificates — never commit
+.netrc
+*.p12
+*.pem
+*.cer
+*.p8
+*.mobileprovision

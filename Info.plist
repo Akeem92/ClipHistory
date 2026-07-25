@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>ClipHistory</string>
+	<key>CFBundleDisplayName</key>
+	<string>ClipHistory</string>
+	<!-- Single source of truth: build.sh, install.sh and uninstall.sh all read this,
+	     and the launchd agent label is derived from it. Change it if you fork. -->
+	<key>CFBundleIdentifier</key>
+	<string>local.cliphistory</string>
+	<!-- Must match the binary's filename inside Contents/MacOS/ -->
+	<key>CFBundleExecutable</key>
+	<string>ClipHistory</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<!-- Looks for Contents/Resources/ClipHistory.icns — no extension here. -->
+	<key>CFBundleIconFile</key>
+	<string>ClipHistory</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<!-- The key that makes this a background agent: no Dock icon, no menu bar. -->
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>
