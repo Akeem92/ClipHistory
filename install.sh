@@ -47,6 +47,6 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
 echo
 echo "==> Installed and running. It will start automatically at login."
-echo "    Press Cmd+Shift+V to open the history."
+echo "    Press Cmd+Option+V to open the history (changeable in Preferences…)."
 echo
 echo "    Uninstall: ./uninstall.sh"

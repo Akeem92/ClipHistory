@@ -2,12 +2,13 @@ import AppKit
 import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
-    static let showHistory = Self("showHistory", default: .init(.v, modifiers: [.command, .shift]))
+    static let showHistory = Self("showHistory", default: .init(.v, modifiers: [.command, .option]))
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = HistoryStore()
     private let picker = PickerPanel()
+    private let preferences = PreferencesPanel()
 
     private var watcher: ClipboardWatcher?
     private var statusItem: NSStatusItem?
@@ -67,6 +68,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.clear()
     }
 
+    @objc private func showPreferences() {
+        preferences.show()
+    }
+
     @objc private func openAccessibilitySettings() {
         Paster.openAccessibilitySettings()
     }
@@ -107,6 +112,12 @@ extension AppDelegate: NSMenuDelegate {
             grant.target = self
             menu.addItem(grant)
         }
+
+        let prefs = NSMenuItem(
+            title: "Preferences…", action: #selector(showPreferences), keyEquivalent: ","
+        )
+        prefs.target = self
+        menu.addItem(prefs)
 
         menu.addItem(.separator())
 
