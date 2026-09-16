@@ -5,15 +5,19 @@ copy, and gives it back with a keyboard shortcut.
 
 Written in Swift with AppKit, built with SwiftPM — no Xcode project, no storyboards.
 
+**Version 0.2.0** — auto-paste is now switchable, and the picker's opacity and background
+colour are yours to set. See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
 ## Features
 
 - Remembers the last 500 text copies, restored on restart
-- `Cmd+Shift+V` opens a searchable picker anywhere
+- `Cmd+Option+V` opens a searchable picker anywhere — rebindable
 - Multi-word search — `swift init` matches both words in any order
 - Preview pane showing the full, unflattened content of the selected entry
 - `Cmd+1`–`Cmd+9` pastes that entry directly
 - `Cmd+Delete` forgets a single entry
-- Pastes straight back into the app you were using
+- Pastes straight back into the app you were using — switchable off, then it only copies
+- Adjustable picker opacity and background colour
 - Skips anything a password manager marks as concealed
 - No Dock icon, no network access
 
@@ -35,7 +39,7 @@ cd ClipHistory
 it. `install.sh` copies the app to `~/Applications` and registers a launch agent so it
 starts at login.
 
-Then grant one permission — see below — and press `Cmd+Shift+V`.
+Then grant one permission — see below — and press `Cmd+Option+V`.
 
 ## The Accessibility permission
 
@@ -46,20 +50,49 @@ that means synthesizing a keyboard event, and macOS only allows trusted apps to 
 
 Without it the app still works: choosing an entry puts it on the clipboard, you just press
 `Cmd+V` yourself. The menu bar shows an "Enable Auto-Paste…" item while the permission is
-missing.
+missing; it registers ClipHistory in the Accessibility list and opens that list for you.
+If you don't want auto-paste at all, turn it off in Preferences and the app stops asking.
+
+**If you already ticked the box and the item is still there**, the grant was invalidated,
+not never given: macOS ties it to the code signature, and `build.sh` signs ad-hoc, so every
+rebuild produces a new signature. The tick survives, the permission doesn't. Remove
+ClipHistory from the list with `−`, add it back with `+`, or set up stable signing below to
+stop it happening.
 
 ## Shortcuts
 
 | Key | Action |
 | --- | --- |
-| `Cmd+Shift+V` | Open the picker |
+| `Cmd+Option+V` | Open the picker |
 | `↑` `↓` | Move selection |
 | `⏎` | Paste selected |
 | `Cmd+1`–`Cmd+9` | Paste that row directly |
 | `Cmd+Delete` | Forget selected entry |
 | `esc` | Close |
 
-The shortcut is stored in `UserDefaults`, so it can be rebound without recompiling.
+## Preferences
+
+**Preferences…** in the menu bar (`Cmd+,` while the menu is open) holds four settings:
+
+| Setting | What it does |
+| --- | --- |
+| Show History shortcut | Rebind the global hotkey; defaults to `Cmd+Option+V` |
+| Auto-paste | On: choosing an entry pastes it into the app you were using. Off: it only lands on the clipboard and you press `Cmd+V` yourself |
+| Picker opacity | 25%–100%, how far you can see through the picker window |
+| Picker background | A custom tint for the picker, or the system window background |
+
+Only the window background takes the opacity — the text stays fully opaque, so the
+history is still readable at 30%. A dark custom background switches the picker to the dark
+appearance, so labels stay legible on it.
+
+Auto-paste also has a direct toggle in the menu bar, since it's the one setting worth
+flipping mid-session. It's two conditions, tracked separately: your switch, and the
+Accessibility permission macOS grants. The menu ticks your switch and adds an indented
+"Needs Accessibility Access…" line when the permission is the missing half; the picker's
+footer says "copy" instead of "paste" whenever a paste won't actually happen.
+
+Everything here lives in `UserDefaults`, so nothing needs recompiling, and changes apply
+to an already-open picker straight away.
 
 ## Security and privacy
 
@@ -134,6 +167,8 @@ Sources/ClipHistory/
   ClipboardWatcher.swift   pasteboard polling
   HistoryStore.swift       storage
   PickerPanel.swift        the picker window
+  PreferencesPanel.swift   shortcut + appearance settings window
+  AppearanceSettings.swift picker opacity and background colour
   Paster.swift             auto-paste
 ```
 

@@ -71,6 +71,7 @@ final class PickerPanel: NSObject {
     private let previewHeader = NSTextField(labelWithString: "")
     private let previewTextView = NSTextView()
     private let previewScrollView = NSScrollView()
+    private let hint = NSTextField(labelWithString: "")
 
     private var items: [String] = []
     private var filtered: [String] = []
@@ -92,6 +93,12 @@ final class PickerPanel: NSObject {
         panel.keyEquivalentHandler = { [weak self] event in
             self?.handleKeyEquivalent(event) ?? false
         }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applyAppearance),
+            name: AppearanceSettings.didChange,
+            object: nil
+        )
     }
 
     // MARK: - Show / hide
@@ -100,6 +107,8 @@ final class PickerPanel: NSObject {
         self.items = items
         // Before activating: once the panel is up, we are the frontmost app.
         previousApp = NSWorkspace.shared.frontmostApplication
+
+        updateHint()
 
         searchField.stringValue = ""
         applyFilter("")
@@ -125,6 +134,31 @@ final class PickerPanel: NSObject {
                 x: visible.midX - panel.frame.width / 2,
                 y: visible.midY - panel.frame.height / 2 + visible.height * 0.08
             ))
+    }
+
+    /// With auto-paste off — by choice or for want of the permission — ⏎ only reaches the
+    /// clipboard, so the footer says "copy" rather than promising a paste that won't come.
+    private func updateHint() {
+        let verb = Paster.isAutoPasteActive ? "paste" : "copy"
+        hint.stringValue =
+            "↑↓ navigate    ⏎ \(verb)    ⌘1–9 \(verb) directly    ⌘⌫ forget    esc close"
+    }
+
+    // MARK: - Appearance
+
+    /// Only the window background takes the alpha. Fading the whole window with
+    /// `alphaValue` would wash out the text too, and an unreadable history is useless.
+    @objc private func applyAppearance() {
+        let settings = AppearanceSettings.shared
+        let custom = settings.backgroundColor
+        let opacity = settings.opacity
+
+        panel.isOpaque = custom == nil && opacity >= 1.0
+        panel.backgroundColor = (custom ?? .windowBackgroundColor).withAlphaComponent(opacity)
+        // AppKit can't infer text colours from a window colour, so a dark custom tint has
+        // to switch the whole panel to the dark appearance for the labels to follow.
+        panel.appearance = custom.flatMap { NSAppearance(named: $0.isDark ? .darkAqua : .aqua) }
+        panel.invalidateShadow()
     }
 
     // MARK: - Keyboard
@@ -240,6 +274,7 @@ final class PickerPanel: NSObject {
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
 
+        applyAppearance()
         configureSearchField()
         configureTable()
         configurePreview()
@@ -252,9 +287,7 @@ final class PickerPanel: NSObject {
         verticalDivider.boxType = .separator
         verticalDivider.translatesAutoresizingMaskIntoConstraints = false
 
-        let hint = NSTextField(
-            labelWithString:
-                "↑↓ navigate    ⏎ paste    ⌘1–9 paste directly    ⌘⌫ forget    esc close")
+        updateHint()
         hint.font = .systemFont(ofSize: 11)
         hint.textColor = .tertiaryLabelColor
         hint.translatesAutoresizingMaskIntoConstraints = false

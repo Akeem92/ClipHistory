@@ -33,7 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.togglePicker()
         }
 
-        if !Paster.isTrusted {
+        // Only worth prompting for a permission the user has asked to use.
+        if Paster.isAutoPasteEnabled && !Paster.isTrusted {
             Paster.promptForAccessibility()
         }
     }
@@ -68,12 +69,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.clear()
     }
 
+    @objc private func toggleAutoPaste() {
+        Paster.isAutoPasteEnabled.toggle()
+        // Switching it on is a request for it to actually work, so chase the permission
+        // it needs in the same click instead of leaving a tick that does nothing.
+        if Paster.isAutoPasteEnabled && !Paster.isTrusted {
+            openAccessibilitySettings()
+        }
+    }
+
     @objc private func showPreferences() {
         preferences.show()
     }
 
+    /// Clicking this a second time while still untrusted almost always means the grant was
+    /// invalidated rather than never given, so the second visit explains that instead of
+    /// silently reopening the same list.
     @objc private func openAccessibilitySettings() {
-        Paster.openAccessibilitySettings()
+        let key = "accessibilityRequested"
+        let askedBefore = UserDefaults.standard.bool(forKey: key)
+        UserDefaults.standard.set(true, forKey: key)
+
+        if askedBefore {
+            let alert = NSAlert()
+            alert.messageText = "ClipHistory still isn't trusted for Auto-Paste"
+            alert.informativeText = """
+                If ClipHistory is already ticked in the Accessibility list, remove it with \
+                "−" and add it back with "+".
+
+                macOS ties the grant to the app's code signature, and build.sh signs \
+                ad-hoc — a signature that changes on every rebuild. The tick survives, the \
+                permission doesn't. Tools/make-signing-cert.sh fixes this for good.
+                """
+            alert.addButton(withTitle: "Open Accessibility Settings")
+            alert.addButton(withTitle: "Cancel")
+            NSApp.activate()
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+
+        Paster.requestAccessibility()
     }
 
     @objc private func revealStorage() {
@@ -103,13 +137,26 @@ extension AppDelegate: NSMenuDelegate {
         show.setShortcut(for: .showHistory)
         menu.addItem(show)
 
-        if !Paster.isTrusted {
+        let autoPaste = NSMenuItem(
+            title: "Auto-Paste", action: #selector(toggleAutoPaste), keyEquivalent: ""
+        )
+        autoPaste.target = self
+        // The tick follows the setting the click controls, not whether it can currently
+        // fire — otherwise ticking it while untrusted would look like a dead menu item.
+        // The indented line below carries the "granted, but blocked" news instead.
+        autoPaste.state = Paster.isAutoPasteEnabled ? .on : .off
+        menu.addItem(autoPaste)
+
+        // Switched on but unable to fire: a bare tick would be a lie, so name the half
+        // that's missing rather than leaving the user to wonder why nothing pastes.
+        if Paster.isAutoPasteEnabled && !Paster.isTrusted {
             let grant = NSMenuItem(
-                title: "Enable Auto-Paste…",
+                title: "Needs Accessibility Access…",
                 action: #selector(openAccessibilitySettings),
                 keyEquivalent: ""
             )
             grant.target = self
+            grant.indentationLevel = 1
             menu.addItem(grant)
         }
 
